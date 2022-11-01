@@ -29,7 +29,7 @@ N/A
       
 param
 (
-    [string]$Seed,
+    [Parameter(Mandatory=$true)][string]$Seed,
     [int]$Length=14,
     [string]$OldBIOSPWD
 )
