@@ -1,0 +1,1 @@
+Get-AppxPackage "Microsoft.DesktopApp*" | Remove-AppxPackage -Confirm:$false

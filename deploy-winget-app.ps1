@@ -838,7 +838,10 @@ function Invoke-UploadWin32Lob() {
         
         [parameter(Mandatory = $false, Position = 8)]
         [ValidateSet('system', 'user')]
-        $installExperience = "system"
+        $installExperience = "system",
+
+        [parameter(Mandatory = $false, Position = 9)]
+        $dependacy
     )
         
     try	{
@@ -1004,7 +1007,12 @@ function Invoke-UploadWin32Lob() {
         foreach ($i in 0..$sleep) {
             Write-Progress -Activity "Sleeping for $($sleep-$i) seconds" -PercentComplete ($i / $sleep * 100) -SecondsRemaining ($sleep - $i)
             Start-Sleep -s 1
-        }            
+        }
+
+        if ($null -ne $dependacy) {
+            New-MgDeviceAppMgtMobileAppRelationship -MobileAppId $appId -TargetId $dependacy -TargetType parent
+        }
+
     }
             
     catch {
@@ -2349,7 +2357,8 @@ function new-win32app {
         $appfile,
         $installcmd,
         $uninstallcmd,
-        $detectionfile
+        $detectionfile,
+        $dependancy
     )
     # Defining Intunewin32 detectionRules
     $PSRule = New-DetectionRule -PowerShell -ScriptFile $detectionfile -enforceSignatureCheck $false -runAs32Bit $false
@@ -2363,8 +2372,7 @@ function new-win32app {
     # Win32 Application Upload
     $appupload = Invoke-UploadWin32Lob -SourceFile "$appfile" -DisplayName "$appname" -publisher "Winget" `
         -description "$appname Winget Package" -detectionRules $DetectionRule -returnCodes $ReturnCodes `
-        -installCmdLine "$installcmd" `
-        -uninstallCmdLine "$uninstallcmd"
+        -installCmdLine "$installcmd" -uninstallCmdLine "$uninstallcmd" -dependancy $dependancy
 
     return $appupload
 
@@ -2383,6 +2391,12 @@ Write-Verbose "Graph connection established"
 
 if ($question -eq 0) {
     $VerbosePreference="Continue"
+}
+
+$depques = $host.UI.PromptForChoice("App Installer Package", "Do you want to depend on the app installer package?", ([System.Management.Automation.Host.ChoiceDescription]"&Yes",[System.Management.Automation.Host.ChoiceDescription]"&No"), 1)
+
+if ($depques -eq 0) {
+    $depid = Read-Host -Prompt "Please enter the GUID of the App installer package:"
 }
 
 Write-Progress "Loading Winget Packages" -PercentComplete 1
@@ -2454,7 +2468,7 @@ $packs | out-gridview -PassThru -Title "Available Applications" | ForEach-Object
     Write-Verbose "Uploading $appname to Intune"
     $installcmd = "powershell.exe -ExecutionPolicy Bypass -File $installfilename"
     $uninstallcmd = "powershell.exe -ExecutionPolicy Bypass -File $uninstallfilename"
-    new-win32app -appid $appid -appname $appname -appfile $intunewinpath -installcmd $installcmd -uninstallcmd $uninstallcmd -detectionfile $detectionscriptfile
+    new-win32app -appid $appid -appname $appname -appfile $intunewinpath -installcmd $installcmd -uninstallcmd $uninstallcmd -detectionfile $detectionscriptfile -dependancy $depid
     Write-Host "$appname Created and uploaded"
 
     ##Assign Win32

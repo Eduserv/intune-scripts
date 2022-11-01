@@ -1,0 +1,1 @@
+(Get-AppxPackage "Microsoft.DesktopApp*").Length -gt 0

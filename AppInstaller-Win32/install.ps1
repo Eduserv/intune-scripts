@@ -1,0 +1,1 @@
+Add-AppxPackage https://github.com/microsoft/winget-cli/releases/latest/download/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle -Confirm:$false -InstallAllResources:$true
