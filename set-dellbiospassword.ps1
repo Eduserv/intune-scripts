@@ -70,7 +70,7 @@ foreach ($i in 0..($Length - 1)) {
         Write-Verbose "Lookup too large, div 2 $([Math]::Floor($lookup / 2))"
         $lookup = [Math]::Floor($lookup / 2)
     }
-    $NewPassword += $($fullseed[$lookup])
+    $NewPassword += $fullseed[$lookup]
 }
 
 $IsAdminPassSet = (Get-Item -Path DellSmbios:\Security\IsAdminPasswordSet).CurrentValue
