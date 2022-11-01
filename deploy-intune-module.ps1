@@ -1181,6 +1181,9 @@ function new-detectionscript {
     $detection = @"
     if (Get-InstalledModule -Name "$appid").length -gt 0 {
         Write-Host "Found it!"
+        exit 0
+    } else {
+        exit -1
     }
 "@
     return $detection

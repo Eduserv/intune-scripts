@@ -7,4 +7,7 @@
     $wingettest = &$winget list --id 9WZDNCRFJ3PZ
     if ($wingettest -like "*9WZDNCRFJ3PZ*"){
         Write-Host "Found it!"
+        exit 0
+    } else {
+        exit -1
     }

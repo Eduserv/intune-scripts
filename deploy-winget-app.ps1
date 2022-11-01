@@ -2272,7 +2272,7 @@ function new-installscript {
     $install = @"
     `$ResolveWingetPath = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe"
         if (`$ResolveWingetPath){
-               `$WingetPath = `$ResolveWingetPath[-1].Path
+            `$WingetPath = `$ResolveWingetPath[-1].Path
         }
     
     `$Winget = `$WingetPath + "\winget.exe"
@@ -2291,7 +2291,7 @@ function new-uninstallscript {
     $uninstall = @"
     `$ResolveWingetPath = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe"
         if (`$ResolveWingetPath){
-               `$WingetPath = `$ResolveWingetPath[-1].Path
+            `$WingetPath = `$ResolveWingetPath[-1].Path
         }
     
     `$Winget = `$WingetPath + "\winget.exe"
