@@ -841,7 +841,7 @@ function Invoke-UploadWin32Lob() {
         $installExperience = "system",
 
         [parameter(Mandatory = $false, Position = 9)]
-        $dependacy
+        $dependancy
     )
         
     try	{
@@ -1010,7 +1010,7 @@ function Invoke-UploadWin32Lob() {
         }
 
         if ($null -ne $dependacy) {
-            New-MgDeviceAppMgtMobileAppRelationship -MobileAppId $appId -TargetId $dependacy -TargetType parent
+            New-MgDeviceAppMgtMobileAppRelationship -MobileAppId $appId -TargetId $dependancy -TargetType parent
         }
 
     }
