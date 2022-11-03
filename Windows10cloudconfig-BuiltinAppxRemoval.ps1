@@ -63,8 +63,6 @@ New-Item -Path $Folder_install -ItemType Directory -Force -Confirm:$false
 $wc = New-Object net.webclient
 $wc.Downloadfile($URL_msixbundle, "$Folder_install\$MSIXBundle")
 
-
-
 # Install WinGet MSIXBundle
 try {
 
@@ -75,13 +73,21 @@ catch {
     Write-Error "Failed to install $PackageName!"
 }
 
+$WebResponse = Invoke-WebRequest -UseBasicParsing -Method 'POST' -Uri 'https://store.rg-adguard.net/api/GetFiles' -Body "type=url&url=https://www.microsoft.com/p/Company-Portal/9WZDNCRFJ3PZ&ring=Retail" -ContentType 'application/x-www-form-urlencoded'
+$LinksMatch = $WebResponse.Links | where {$_ -like '*.appxbundle*'} | where {$_ -like '*_neutral_*' -or $_ -like "*_"+$env:PROCESSOR_ARCHITECTURE.Replace("AMD","X").Replace("IA","X")+"_*"} | Select-String -Pattern '(?<=a href=").+(?=" r)'
+$DownloadLinks = $LinksMatch.matches.value 
+#Download Urls
 
+$url = $DownloadLinks[$DownloadLinks.length - 1]
+
+# Download current winget MSIXBundle
+$wc.Downloadfile($url, "$Folder_install\companyportal.appxbundle")
+
+Add-AppxProvisionedPackage -Online -PackagePath "$Folder_install\companyportal.appxbundle" -SkipLicense
 
 # Install file cleanup
 Start-Sleep 3 # to unblock installation file
 Remove-Item -Path "$Folder_install" -Force -Recurse
-
-
 
 Stop-Transcript
 
