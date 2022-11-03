@@ -46,18 +46,12 @@ $PackageName = "WindowsPackageManager"
 $MSIXBundle = "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
 $URL_msixbundle = "https://aka.ms/getwinget"
 
-
-
 $Path_local = "$Env:Programfiles\_MEM"
 Start-Transcript -Path "$Path_local\Log\$ProgramName-install.log" -Force
-
-
 
 # Program/Installation folder
 $Folder_install = "$Path_local\Data\$PackageName"
 New-Item -Path $Folder_install -ItemType Directory -Force -Confirm:$false
-
-
 
 # Download current winget MSIXBundle
 $wc = New-Object net.webclient
@@ -74,7 +68,7 @@ catch {
 }
 
 $WebResponse = Invoke-WebRequest -UseBasicParsing -Method 'POST' -Uri 'https://store.rg-adguard.net/api/GetFiles' -Body "type=url&url=https://www.microsoft.com/p/Company-Portal/9WZDNCRFJ3PZ&ring=Retail" -ContentType 'application/x-www-form-urlencoded'
-$LinksMatch = $WebResponse.Links | where {$_ -like '*.appxbundle*'} | where {$_ -like '*_neutral_*' -or $_ -like "*_"+$env:PROCESSOR_ARCHITECTURE.Replace("AMD","X").Replace("IA","X")+"_*"} | Select-String -Pattern '(?<=a href=").+(?=" r)'
+$LinksMatch = $WebResponse.Links | Where-Object {$_ -like '*.appxbundle*'} | Where-Object {$_ -like '*_neutral_*' -or $_ -like "*_"+$env:PROCESSOR_ARCHITECTURE.Replace("AMD","X").Replace("IA","X")+"_*"} | Select-String -Pattern '(?<=a href=").+(?=" r)'
 $DownloadLinks = $LinksMatch.matches.value 
 #Download Urls
 
