@@ -21,15 +21,15 @@ Windows 10 in cloud configuration OneDrive Known Folder Move and built-in app re
 
 #Sample code to exclude removal of certain apps by a 'retain' list.
 
-$removeList = 'Microsoft.BingWeather','Microsoft.MicrosoftSolitaireCollection','Microsoft.MixedReality.Portal','Microsoft.MicrosoftOfficeHub','Microsoft.Xbox','Microsoft.SkypeApp','Microsoft.WindowsMaps','Microsoft.People','microsoft.windowscommunicationsapps'
+$removeList = 'Microsoft.DesktopAppInstaller', 'Microsoft.BingWeather', 'Microsoft.MicrosoftSolitaireCollection', 'Microsoft.MixedReality.Portal', 'Microsoft.MicrosoftOfficeHub', 'Microsoft.Xbox', 'Microsoft.SkypeApp', 'Microsoft.WindowsMaps', 'Microsoft.People', 'microsoft.windowscommunicationsapps'
 
 # get all provisioned packages
 $AppList = Get-AppXProvisionedPackage -Online 
 
 
 foreach ($app in $AppList) {
-  #write-host $app.DisplayName
-  #write-host $app.PackageName
+    #write-host $app.DisplayName
+    #write-host $app.PackageName
     
     # retain items in the list
 
@@ -37,10 +37,53 @@ foreach ($app in $AppList) {
         if ($app.PackageName -ilike "$item*") {
             write-host "Removing: " $app.DisplayName
             Remove-AppxProvisionedPackage -Online -PackageName $app.PackageName
-            break;
+            break
         }
     }
 }
+
+$PackageName = "WindowsPackageManager"
+$MSIXBundle = "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+$URL_msixbundle = "https://aka.ms/getwinget"
+
+
+
+$Path_local = "$Env:Programfiles\_MEM"
+Start-Transcript -Path "$Path_local\Log\$ProgramName-install.log" -Force
+
+
+
+# Program/Installation folder
+$Folder_install = "$Path_local\Data\$PackageName"
+New-Item -Path $Folder_install -ItemType Directory -Force -Confirm:$false
+
+
+
+# Download current winget MSIXBundle
+$wc = New-Object net.webclient
+$wc.Downloadfile($URL_msixbundle, "$Folder_install\$MSIXBundle")
+
+
+
+# Install WinGet MSIXBundle
+try {
+
+    Add-AppxProvisionedPackage -Online -PackagePath "$Folder_install\$MSIXBundle" -SkipLicense
+    Write-Host "Installation of $PackageName finished"
+}
+catch {
+    Write-Error "Failed to install $PackageName!"
+}
+
+
+
+# Install file cleanup
+Start-Sleep 3 # to unblock installation file
+Remove-Item -Path "$Folder_install" -Force -Recurse
+
+
+
+Stop-Transcript
 
 #>
 # SIG # Begin signature block
