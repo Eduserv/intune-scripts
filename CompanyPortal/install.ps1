@@ -4,4 +4,4 @@
         }
     
     $Winget = $WingetPath + "\winget.exe"
-    &$winget install --id 9WZDNCRFJ3PZ --silent --force --accept-package-agreements --accept-source-agreements
+    . $winget install --id 9WZDNCRFJ3PZ --silent --force --accept-package-agreements --accept-source-agreements

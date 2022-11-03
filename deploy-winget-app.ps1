@@ -12,9 +12,6 @@
 .REQUIREDSCRIPTS 
 .EXTERNALSCRIPTDEPENDENCIES 
 .RELEASENOTES
-#Requires -Module Microsoft.Graph.DeviceManagement
-#Requires -Module Microsoft.Graph.Groups
-#Requires -Module Microsoft.Graph
 #>
 <#
 .SYNOPSIS
@@ -40,6 +37,22 @@ $ErrorActionPreference = "Continue"
 $date = get-date -format ddMMyyyy
 $path = "$($env:TEMP)\intune"
 Start-Transcript -Path "$path\intune-$date.log"
+
+Write-Host "Installing Intune modules if required (current user scope)"
+
+#Install Graph Module if not available
+if (Get-Module -ListAvailable -Name Microsoft.Graph) {
+    Write-Host "Graph Module Already Installed"
+} 
+else {
+    try {
+        Install-Module -Name Microsoft.Graph -Scope CurrentUser -Repository PSGallery -Force -AllowClobber 
+    }
+    catch [Exception] {
+        $_.message 
+        exit
+    }
+}
 
 $intuneapputiloutput = "$path\IntuneWinAppUtil.exe"
 
@@ -2102,6 +2115,7 @@ function new-aadgroups {
 
 }
 
+
 function new-detectionscript {
     param
     (
@@ -2113,16 +2127,13 @@ $ResolveWingetPath = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.Deskto
     if ($ResolveWingetPath){
            $WingetPath = $ResolveWingetPath[-1].Path
     }
-
 $Winget = $WingetPath + "\winget.exe"
-$upgrades = &$winget upgrade
+$upgrades = . $winget upgrade
 if ($upgrades -match SETAPPID) {
-    Write-Host "Upgrade available for: SETAPPNAME"
-    exit 1
+    Write-Error "Upgrade available for: SETAPPNAME"
 }
 else {
-        Write-Host "No Upgrade available"
-        exit 0
+    Write-Host "No Upgrade available"
 }
 '@
     $detect2 = $detect -replace "SETAPPID", $appid
@@ -2130,6 +2141,7 @@ else {
 
     return $detect3
 }
+
 
 function new-remediationscript {
     param
@@ -2144,8 +2156,7 @@ $ResolveWingetPath = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.Deskto
     }
         
     $Winget = $WingetPath + "\winget.exe"
-    &$winget upgrade --id SETAPPID --silent --force --accept-package-agreements --accept-source-agreements
-
+    . $winget upgrade --id SETAPPID --silent --force --accept-package-agreements --accept-source-agreements
 '@
     $remediate2 = $remediate -replace "SETAPPID", $appid
     return $remediate2
@@ -2253,7 +2264,7 @@ function new-detectionscript {
         }
     
     `$Winget = `$WingetPath + "\winget.exe"
-    `$wingettest = &`$winget list --id $appid
+    `$wingettest = . `$winget list --id $appid
     if (`$wingettest -like "*$appid*"){
         Write-Host "Found it!"
     }
@@ -2276,7 +2287,7 @@ function new-installscript {
         }
     
     `$Winget = `$WingetPath + "\winget.exe"
-    &`$winget install --id $appid --silent --force --accept-package-agreements --accept-source-agreements
+    . `$winget install --id $appid --silent --force --accept-package-agreements --accept-source-agreements
 "@
     return $install
 
@@ -2295,7 +2306,7 @@ function new-uninstallscript {
         }
     
     `$Winget = `$WingetPath + "\winget.exe"
-    &`$winget uninstall --id $appid --silent --force --accept-package-agreements --accept-source-agreements
+    . `$winget uninstall --id $appid --silent --force --accept-package-agreements --accept-source-agreements
 "@
     return $uninstall
 

@@ -4,10 +4,9 @@
         }
     
     $Winget = $WingetPath + "\winget.exe"
-    $wingettest = &$winget list --id 9WZDNCRFJ3PZ
+    $wingettest = . $winget list --id 9WZDNCRFJ3PZ
     if ($wingettest -like "*9WZDNCRFJ3PZ*"){
         Write-Host "Found it!"
-        return 0
     } else {
-        return -1
+        Write-Error "No found"
     }

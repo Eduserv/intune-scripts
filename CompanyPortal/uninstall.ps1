@@ -4,4 +4,4 @@
         }
     
     $Winget = $WingetPath + "\winget.exe"
-    &$winget uninstall --id 9WZDNCRFJ3PZ --silent --force --accept-package-agreements --accept-source-agreements
+    . $winget uninstall --id 9WZDNCRFJ3PZ --silent --force --accept-package-agreements --accept-source-agreements
