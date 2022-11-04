@@ -32,6 +32,11 @@ N/A
 #>
 ##########################################################################################
 
+param
+(
+    [switch]$appInstallerDep
+)
+
 $ErrorActionPreference = "Continue"
 ##Start Logging to %TEMP%\intune.log
 $date = get-date -format ddMMyyyy
@@ -2390,18 +2395,19 @@ function new-win32app {
 ######                          END FUNCTIONS SECTION                                               ########
 ############################################################################################################
 
-$question = $host.UI.PromptForChoice("Verbose output?", "Do you want verbose output?", ([System.Management.Automation.Host.ChoiceDescription]"&Yes",[System.Management.Automation.Host.ChoiceDescription]"&No"), 1)
 
 Write-Verbose "Connecting to Microsoft Graph"
 Select-MgProfile -Name Beta
 Connect-MgGraph -Scopes DeviceManagementApps.ReadWrite.All, DeviceManagementConfiguration.ReadWrite.All, Group.ReadWrite.All, GroupMember.ReadWrite.All, openid, profile, email, offline_access
 Write-Verbose "Graph connection established"
 
-if ($question -eq 0) {
-    $VerbosePreference="Continue"
+if ($appInstallerDep) {
+    $depques = 0
+} elseif ($false -eq $appInstallerDep) {
+    $depques = 1
+} else {
+    $depques = $host.UI.PromptForChoice("App Installer Package", "Do you want to depend on the app installer package?", ([System.Management.Automation.Host.ChoiceDescription]"&Yes",[System.Management.Automation.Host.ChoiceDescription]"&No"), 1)
 }
-
-$depques = $host.UI.PromptForChoice("App Installer Package", "Do you want to depend on the app installer package?", ([System.Management.Automation.Host.ChoiceDescription]"&Yes",[System.Management.Automation.Host.ChoiceDescription]"&No"), 1)
 
 if ($depques -eq 0) {
     $depid = Read-Host -Prompt "Please enter the GUID of the App installer package:"
