@@ -26,6 +26,12 @@
 
 #Make sure you set the above variables before uploading to intune!!!!!!
 
+if ($AppID -eq "" -or $TenantID -eq "" -or $Thumbprint -eq "" -or $VaultName -eq "") {
+    Write-Error "Parameter(s) missing"
+    exit 1
+    throw "Parameter(s) missing"
+}
+
 function Write-Log {
     param(
         $MessageType,
