@@ -21,7 +21,7 @@ Windows 10 in cloud configuration OneDrive Known Folder Move and built-in app re
 
 #Sample code to exclude removal of certain apps by a 'retain' list.
 
-$removeList = 'Microsoft.DesktopAppInstaller', 'Microsoft.BingWeather', 'Microsoft.MicrosoftSolitaireCollection', 'Microsoft.MixedReality.Portal', 'Microsoft.MicrosoftOfficeHub', 'Microsoft.Xbox', 'Microsoft.SkypeApp', 'Microsoft.WindowsMaps', 'Microsoft.People', 'microsoft.windowscommunicationsapps'
+$removeList = 'Microsoft.DesktopAppInstaller', 'Microsoft.BingWeather', 'Microsoft.MicrosoftSolitaireCollection', 'Microsoft.MixedReality.Portal', 'Microsoft.MicrosoftOfficeHub', 'Microsoft.Xbox', 'Microsoft.SkypeApp', 'Microsoft.WindowsMaps', 'Microsoft.People', 'microsoft.windowscommunicationsapps', 'MicrosoftTeams'
 
 # get all provisioned packages
 $AppList = Get-AppXProvisionedPackage -Online 

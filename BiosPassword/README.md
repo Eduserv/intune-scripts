@@ -1,0 +1,1 @@
+Adapted from [https://github.com/damienvanrobaeys/Intune-Proactive-Remediation-scripts/tree/main/Set%20BIOS%20password](https://github.com/damienvanrobaeys/Intune-Proactive-Remediation-scripts/tree/main/Set%20BIOS%20password)
