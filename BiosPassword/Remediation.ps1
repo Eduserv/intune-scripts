@@ -15,7 +15,7 @@
  KeyVault service principal AppID
  .PARAMETER Thumbprint
  Certificate Thumbprint to use
- .PARAMETER vaultName
+ .PARAMETER VaultName
  Keyvault Name
 #>
 
@@ -28,11 +28,7 @@ param (
     [Parameter(Mandatory)]
     [string]$Thumbprint,
     [Parameter(Mandatory)]
-    [uri]$AzAccountsUrl,
-    [Parameter(Mandatory)]
-    [uri]$AzKeyVaultUrl,
-    [Parameter(Mandatory)]
-    [string]$vaultName
+    [string]$VaultName
 )
 
 function Write-Log {
@@ -155,7 +151,7 @@ if ($Get_Manufacturer_Info -like "*HP*") {
         $bios = Get-WmiObject -Namespace root/hp/instrumentedBIOS -Class HP_BIOSSettingInterface
         $bios.SetBIOSSetting("Setup Password", "<utf-16/>" + $password, "<utf-16/>")
         Write-Log -Message_Type "SUCCESS" -Message "BIOS password has been changed"
-        Set-AzKeyVaultSecret -VaultName $vaultName -Name $Get_Device_Name -SecretValue $secretvalue
+        Set-AzKeyVaultSecret -VaultName $VaultName -Name $Get_Device_Name -SecretValue $secretvalue
         Write-Log -Message_Type "SUCCESS" -Message "Password sync'd to keyvault"
         Stop-Transcript
         EXIT 0
@@ -171,7 +167,7 @@ if ($Get_Manufacturer_Info -like "*HP*") {
         $PasswordSet = Get-WmiObject -Namespace root\wmi -Class Lenovo_SetBiosPassword
         $PasswordSet.SetBiosPassword("pap,"",$password,ascii,us") | out-null
         Write-Log -Message_Type "SUCCESS" -Message "BIOS password has been changed"
-        Set-AzKeyVaultSecret -VaultName $vaultName -Name $Get_Device_Name -SecretValue $secretvalue
+        Set-AzKeyVaultSecret -VaultName $VaultName -Name $Get_Device_Name -SecretValue $secretvalue
         Write-Log -Message_Type "SUCCESS" -Message "Password sync'd to keyvault"
         Stop-Transcript
         EXIT 0
@@ -187,7 +183,7 @@ if ($Get_Manufacturer_Info -like "*HP*") {
         Set-Item -Path DellSmbios:\Security\AdminPassword "$AdminPwd"
         Write-Log -Message_Type "SUCCESS" -Message "BIOS password has been changed"		
         Write-Host "Change password: Success"			
-        Set-AzKeyVaultSecret -VaultName $vaultName -Name $Get_Device_Name -SecretValue $secretvalue
+        Set-AzKeyVaultSecret -VaultName $VaultName -Name $Get_Device_Name -SecretValue $secretvalue
         Write-Host "Password saved to Keyvault"
         Stop-Transcript
         EXIT 0
