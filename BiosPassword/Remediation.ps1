@@ -69,27 +69,41 @@ try {
     EXIT 1
 }
 
+if (!(Get-PackageProvider | where {$_.Name -eq "Nuget"})) {			
+    Write-Log -MessageType "INFO" -Message "The package Nuget is not installed"							
+    try {
+        Write-Log -MessageType "INFO" -Message "The package Nuget is being installed"						
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Install-PackageProvider -Name Nuget -MinimumVersion 2.8.5.201 -Force -Confirm:$False | out-null								
+        Write-Log -MessageType "SUCCESS" -Message "The package Nuget has been successfully installed"	
+    } catch {
+        Write-Log -MessageType "ERROR" -Message "An issue occured while installing package Nuget"
+        Write-Error "Error installing nuget package provider"
+        Exit 1
+    }
+}
+
 $Modules = @("Az.accounts", "Az.KeyVault")
 foreach ($Module_Name in $Modules) {
     if (!(Get-InstalledModule $Module_Name)) { 
-        Write-Log -Message_Type "INFO" -Message "The module $Module_Name has not been found"
+        Write-Log -MessageType "INFO" -Message "The module $Module_Name has not been found"
         try {
-            Write-Log -Message_Type "INFO" -Message "The module $Module_Name is being installed"
+            Write-Log -MessageType "INFO" -Message "The module $Module_Name is being installed"
             Install-Module $Module_Name -Force -Confirm:$False -AllowClobber -ErrorAction SilentlyContinue | out-null
-            Write-Log -Message_Type "SUCCESS" -Message "The module $Module_Name has been installed"
-            Write-Log -Message_Type "INFO" -Message "AZ.Accounts version $Module_Version"
+            Write-Log -MessageType "SUCCESS" -Message "The module $Module_Name has been installed"
+            Write-Log -MessageType "INFO" -Message "AZ.Accounts version $Module_Version"
         } catch {
-            Write-Log -Message_Type "ERROR" -Message "The module $Module_Name has not been installed"
+            Write-Log -MessageType "ERROR" -Message "The module $Module_Name has not been installed"
             Stop-Transcript
             EXIT 1
         }
     } else {
         try {
-            Write-Log -Message_Type "INFO" -Message "The module $Module_Name has been found"
+            Write-Log -MessageType "INFO" -Message "The module $Module_Name has been found"
             Import-Module $Module_Name -Force -ErrorAction SilentlyContinue
-            Write-Log -Message_Type "INFO" -Message "The module $Module_Name has been imported"
+            Write-Log -MessageType "INFO" -Message "The module $Module_Name has been imported"
         } catch {
-            Write-Log -Message_Type "ERROR" -Message "The module $Module_Name has not been imported"
+            Write-Log -MessageType "ERROR" -Message "The module $Module_Name has not been imported"
             Write-Host "The module $Module_Name has not been imported"
             Stop-Transcript
             EXIT 1
@@ -98,15 +112,15 @@ foreach ($Module_Name in $Modules) {
 }
 
 if ((Get-Module "Az.accounts" -listavailable) -and (Get-Module "Az.KeyVault" -listavailable)) {
-    Write-Log -Message_Type "INFO" -Message "Both modules are there"
+    Write-Log -MessageType "INFO" -Message "Both modules are there"
 }
 
 try {
-    Write-Log -Message_Type "INFO" -Message "Connecting to your Azure application"
+    Write-Log -MessageType "INFO" -Message "Connecting to your Azure application"
     Connect-AzAccount -tenantid $TenantID.ToString() -ApplicationId $AppID.ToString() -CertificateThumbprint $Thumbprint | Out-null
-    Write-Log -Message_Type "SUCCESS" -Message "Connection OK to your Azure application"
+    Write-Log -MessageType "SUCCESS" -Message "Connection OK to your Azure application"
 } catch {
-    Write-Log -Message_Type "ERROR" -Message "Connection to to your Azure application"
+    Write-Log -MessageType "ERROR" -Message "Connection to to your Azure application"
     Write-Error "FAILED to connect to your Azure application"
     Stop-Transcript
     EXIT 1
@@ -114,10 +128,10 @@ try {
 
 $Get_Manufacturer_Info = (gwmi win32_computersystem).Manufacturer
 $Get_Device_Name = (gwmi win32_computersystem).Name
-Write-Log -Message_Type "INFO" -Message "Manufacturer is: $Get_Manufacturer_Info"
+Write-Log -MessageType "INFO" -Message "Manufacturer is: $Get_Manufacturer_Info"
 
 if (($Get_Manufacturer_Info -notlike "*HP*") -and ($Get_Manufacturer_Info -notlike "*Lenovo*") -and ($Get_Manufacturer_Info -notlike "*Dell*")) {
-    Write-Log -Message_Type "ERROR" -Message "Device manufacturer not supported"
+    Write-Log -MessageType "ERROR" -Message "Device manufacturer not supported"
     Break
     Write-Error "Device manufacturer not supported"
     Stop-Transcript
@@ -138,7 +152,7 @@ elseif ($Get_Manufacturer_Info -like "*Dell*") {
 } 
 
 if (($IsPasswordSet -eq 1) -or ($IsPasswordSet -eq "true") -or ($IsPasswordSet -eq 2)) {
-    Write-Error -Message_Type "ERROR" -Message "There is a current BIOS password"
+    Write-Error -MessageType "ERROR" -Message "There is a current BIOS password"
     Stop-Transcript
     Exit 1
 }
@@ -147,49 +161,49 @@ $password = Get-Random
 $secretvalue = ConvertTo-SecureString $password -AsPlainText -Force
 
 if ($Get_Manufacturer_Info -like "*HP*") {
-    Write-Log -Message_Type "INFO" -Message "Changing BIOS password for HP"
+    Write-Log -MessageType "INFO" -Message "Changing BIOS password for HP"
     try {
         $bios = Get-WmiObject -Namespace root/hp/instrumentedBIOS -Class HP_BIOSSettingInterface
         $bios.SetBIOSSetting("Setup Password", "<utf-16/>" + $password, "<utf-16/>")
-        Write-Log -Message_Type "SUCCESS" -Message "BIOS password has been changed"
+        Write-Log -MessageType "SUCCESS" -Message "BIOS password has been changed"
         Set-AzKeyVaultSecret -VaultName $VaultName -Name $Get_Device_Name -SecretValue $secretvalue
-        Write-Log -Message_Type "SUCCESS" -Message "Password sync'd to keyvault"
+        Write-Log -MessageType "SUCCESS" -Message "Password sync'd to keyvault"
         Stop-Transcript
         EXIT 0
     } catch {
-        Write-Log -Message_Type "ERROR" -Message "BIOS password has not been changed"
+        Write-Log -MessageType "ERROR" -Message "BIOS password has not been changed"
         Write-Error "Change password: Failed"
         Stop-Transcript
         EXIT 1
     }
 } elseif ($Get_Manufacturer_Info -like "*Lenovo*") {
-    Write-Log -Message_Type "INFO" -Message "Changing BIOS password for Lenovo"
+    Write-Log -MessageType "INFO" -Message "Changing BIOS password for Lenovo"
     try {
         $PasswordSet = Get-WmiObject -Namespace root\wmi -Class Lenovo_SetBiosPassword
         $PasswordSet.SetBiosPassword("pap,"",$password,ascii,us") | out-null
-        Write-Log -Message_Type "SUCCESS" -Message "BIOS password has been changed"
+        Write-Log -MessageType "SUCCESS" -Message "BIOS password has been changed"
         Set-AzKeyVaultSecret -VaultName $VaultName -Name $Get_Device_Name -SecretValue $secretvalue
-        Write-Log -Message_Type "SUCCESS" -Message "Password sync'd to keyvault"
+        Write-Log -MessageType "SUCCESS" -Message "Password sync'd to keyvault"
         Stop-Transcript
         EXIT 0
     } catch {
-        Write-Log -Message_Type "ERROR" -Message "BIOS password has not been changed"
+        Write-Log -MessageType "ERROR" -Message "BIOS password has not been changed"
         Write-Error "Change password: Failed"
         Stop-Transcript		
         EXIT 1
     }
 } elseif ($Get_Manufacturer_Info -like "*Dell*") {
-    Write-Log -Message_Type "INFO" -Message "Changing BIOS password for HP"
+    Write-Log -MessageType "INFO" -Message "Changing BIOS password for HP"
     try {
         Set-Item -Path DellSmbios:\Security\AdminPassword "$AdminPwd"
-        Write-Log -Message_Type "SUCCESS" -Message "BIOS password has been changed"		
+        Write-Log -MessageType "SUCCESS" -Message "BIOS password has been changed"		
         Write-Host "Change password: Success"			
         Set-AzKeyVaultSecret -VaultName $VaultName -Name $Get_Device_Name -SecretValue $secretvalue
         Write-Host "Password saved to Keyvault"
         Stop-Transcript
         EXIT 0
     } catch {
-        Write-Log -Message_Type "ERROR" -Message "BIOS password has not been changed"
+        Write-Log -MessageType "ERROR" -Message "BIOS password has not been changed"
         Write-Error "Change password: Failed"
         Stop-Transcript
         EXIT 1

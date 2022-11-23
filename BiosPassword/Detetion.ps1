@@ -21,6 +21,20 @@ function Write-Log {
     Write-Host  "$MyDate - $MessageType : $Message"
 }
 
+if (!(Get-PackageProvider | where {$_.Name -eq "Nuget"})) {			
+    Write-Log -MessageType "INFO" -Message "The package Nuget is not installed"							
+    try {
+        Write-Log -MessageType "INFO" -Message "The package Nuget is being installed"						
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Install-PackageProvider -Name Nuget -MinimumVersion 2.8.5.201 -Force -Confirm:$False | out-null								
+        Write-Log -MessageType "SUCCESS" -Message "The package Nuget has been successfully installed"	
+    } catch {
+        Write-Log -MessageType "ERROR" -Message "An issue occured while installing package Nuget"
+        Write-Error "Error installing nuget package provider"
+        Exit 1
+    }
+}
+
 $Get_Manufacturer_Info = (gwmi win32_computersystem).Manufacturer
 if ($Get_Manufacturer_Info -like "*HP*") {
     Write-Log -MessageType "INFO" -Message "Manufacturer: HP"	

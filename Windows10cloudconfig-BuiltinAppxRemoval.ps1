@@ -47,41 +47,41 @@ $MSIXBundle = "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
 $URL_msixbundle = "https://aka.ms/getwinget"
 
 $Path_local = "$Env:Programfiles\_MEM"
-Start-Transcript -Path "$Path_local\Log\$ProgramName-install.log" -Force
+Start-Transcript -Path "$Path_local\Log\AppX-install.log" -Force
 
-# Program/Installation folder
-$Folder_install = "$Path_local\Data\$PackageName"
-New-Item -Path $Folder_install -ItemType Directory -Force -Confirm:$false
+$ProgramName = "WINGETPROGRAMID"
 
-# Download current winget MSIXBundle
-$wc = New-Object net.webclient
-$wc.Downloadfile($URL_msixbundle, "$Folder_install\$MSIXBundle")
-
-# Install WinGet MSIXBundle
-try {
-
-    Add-AppxProvisionedPackage -Online -PackagePath "$Folder_install\$MSIXBundle" -SkipLicense
-    Write-Host "Installation of $PackageName finished"
-}
-catch {
-    Write-Error "Failed to install $PackageName!"
+# resolve winget_exe
+$winget_exe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe"
+if ($winget_exe.count -gt 1){
+    $winget_exe = $winget_exe[-1].Path
 }
 
-$WebResponse = Invoke-WebRequest -UseBasicParsing -Method 'POST' -Uri 'https://store.rg-adguard.net/api/GetFiles' -Body "type=url&url=https://www.microsoft.com/p/Company-Portal/9WZDNCRFJ3PZ&ring=Retail" -ContentType 'application/x-www-form-urlencoded'
-$LinksMatch = $WebResponse.Links | Where-Object {$_ -like '*.appxbundle*'} | Where-Object {$_ -like '*_neutral_*' -or $_ -like "*_"+$env:PROCESSOR_ARCHITECTURE.Replace("AMD","X").Replace("IA","X")+"_*"} | Select-String -Pattern '(?<=a href=").+(?=" r)'
-$DownloadLinks = $LinksMatch.matches.value 
-#Download Urls
+if (!$winget_exe){
+    Write-Host "Winget not installed"
+    # Program/Installation folder
+    $Folder_install = "$Path_local\Data\$PackageName"
+    New-Item -Path $Folder_install -ItemType Directory -Force -Confirm:$false
 
-$url = $DownloadLinks[$DownloadLinks.length - 1]
-
-# Download current winget MSIXBundle
-$wc.Downloadfile($url, "$Folder_install\companyportal.appxbundle")
-
-Add-AppxProvisionedPackage -Online -PackagePath "$Folder_install\companyportal.appxbundle" -SkipLicense
+    # Download current winget MSIXBundle
+    Invoke-WebRequest $URL_msixbundle -OutFile "$Folder_install\$MSIXBundle"
+    # Install WinGet MSIXBundle
+    try {
+        Add-AppxProvisionedPackage -Online -PackagePath "$Folder_install\$MSIXBundle" -SkipLicense
+        Write-Host "Installation of $PackageName finished"
+    } catch {
+        Write-Error "Failed to install $PackageName!"
+    }
+} else {
+    $wingetPrg_Existing = & $winget_exe list --id $ProgramName --exact --accept-source-agreements
+    if ($wingetPrg_Existing -like "*$ProgramName*"){
+        Write-Host "Found it!"
+    }
+}
 
 # Install file cleanup
 Start-Sleep 3 # to unblock installation file
-Remove-Item -Path "$Folder_install" -Force -Recurse
+Remove-Item -Path "$Env:Programfiles\_MEM\Data" -Force -Recurse
 
 Stop-Transcript
 
