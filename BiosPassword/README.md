@@ -23,7 +23,7 @@ To use this script you will need to:
 [string]$Thumbprint=""
 [string]$VaultName=""
 ```
-10. Create a remedidation action with the [Detection.ps1](./Detection.ps1) and [Remediation.ps1](./Remediation.ps1) scripts.
+10. Create a [Proactive Remediation](https://intune.microsoft.com/#view/Microsoft_Intune_Enrollment/UXAnalyticsMenu/~/proactiveRemediations) script package with the [Detection.ps1](./Detection.ps1) and [Remediation.ps1](./Remediation.ps1) scripts.
 
 
 
