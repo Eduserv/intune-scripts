@@ -2,10 +2,10 @@
  .SYNOPSIS
   Generates, sets and stores the BIOS password in keyvault
  .DESCRIPTION
-  Generates, sets and stores the BIOS password in keyvault
+  Generates, sets and stores the BIOS password in keyvault ensure you set the params
  .EXAMPLE
   PS C:\> Remediation.ps1
-    BIOS Password Set
+    BIOS Password SetW
  .OUTPUTS
   0 BIOS Password Set
   1 BIOS Password Not Set
@@ -19,17 +19,12 @@
  Keyvault Name
 #>
 
-[CmdletBinding()]
-param (
-    [Parameter(Mandatory)]
-    [string]$TenantID,
-    [Parameter(Mandatory)]
-    [string]$AppID,
-    [Parameter(Mandatory)]
-    [string]$Thumbprint,
-    [Parameter(Mandatory)]
-    [string]$VaultName
-)
+[guid]$TenantID=""
+[guid]$AppID=""
+[string]$Thumbprint=""
+[string]$VaultName=""
+
+#Make sure you set the above variables before uploading to intune!!!!!!
 
 function Write-Log {
     param(
@@ -102,7 +97,7 @@ if ((Get-Module "Az.accounts" -listavailable) -and (Get-Module "Az.KeyVault" -li
 
 try {
     Write-Log -Message_Type "INFO" -Message "Connecting to your Azure application"
-    Connect-AzAccount -tenantid $TenantID -ApplicationId $App_ID -CertificateThumbprint $Thumbprint | Out-null
+    Connect-AzAccount -tenantid $TenantID.ToString() -ApplicationId $AppID.ToString() -CertificateThumbprint $Thumbprint | Out-null
     Write-Log -Message_Type "SUCCESS" -Message "Connection OK to your Azure application"
 } catch {
     Write-Log -Message_Type "ERROR" -Message "Connection to to your Azure application"
