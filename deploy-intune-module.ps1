@@ -1085,7 +1085,6 @@ function new-proac {
     ##Daily or Hourly
     #$ScheduleType = "Hourly"
     ##How Often
-    $ScheduleFrequency = "1"
     ##Start Time (if daily)
     #$StartTime = "01:00"
     
@@ -1108,33 +1107,7 @@ function new-proac {
     $Resource = "deviceManagement/deviceHealthScripts"
     $uri = "https://graph.microsoft.com/$graphApiVersion/$Resource"
 
-    $proactive = Invoke-MgGraphRequest -Uri $uri -Method POST -Body $paramsjson -ContentType "application/json"
-
-
-    $assignparams = @{
-        DeviceHealthScriptAssignments = @(
-            @{
-                target               = @{
-                    "@odata.type" = "#microsoft.graph.groupAssignmentTarget"
-                    groupId       = $groupid
-                }
-                runRemediationScript = $true
-                runSchedule          = @{
-                    "@odata.type" = "#microsoft.graph.deviceHealthScriptHourlySchedule"
-                    interval      = $scheduleFrequency
-                }
-            }
-        )
-    }
-    $assignparamsjson = $assignparams | convertto-json -Depth 10
-    $remediationID = $proactive.ID
-        
-        
-    $graphApiVersion = "beta"
-    $Resource = "deviceManagement/deviceHealthScripts"
-    $uri = "https://graph.microsoft.com/$graphApiVersion/$Resource/$remediationID/assign"
-        
-    Invoke-MgGraphRequest -Uri $uri -Method POST -Body $assignparamsjson -ContentType "application/json"
+    Invoke-MgGraphRequest -Uri $uri -Method POST -Body $paramsjson -ContentType "application/json"
 
     return "Success"
 
@@ -1158,7 +1131,9 @@ function new-detectionscript {
         $appid,
         $appname
     )
-    $detection = "Get-InstalledModule -Name `"$appid`""
+    $detection = @"
+Get-InstalledModule -Name "$appid"
+"@
     return $detection
 
 }
@@ -1181,9 +1156,9 @@ function new-installscript {
     `$ModuleName = "$appid"
     `$Path_local = "`$Env:Programfiles\_MEM"
     Start-Transcript -Path "`$Path_local\Log\`$ModuleName-install.log" -Force -Append
-    Install-PackageProvider -Name NuGet -Confirm:`$false -Force
+    Install-PackageProvider -Name "NuGet" -Confirm:`$false -Force
     Install-Module -Name "`$ModuleName" -force -AllowClobber -SkipPublisherCheck -Confirm:`$false
-    Write-Host "`$ModuleName installed"
+    Write-Host "Module `$ModuleName installed"
     Stop-Transcript
 "@
     return $install
@@ -1208,7 +1183,7 @@ function new-uninstallscript {
     `$Path_local = "`$Env:Programfiles\_MEM"
     Start-Transcript -Path "`$Path_local\Log\`$ModuleName.log" -Force -Append
 
-    Uninstall-Module -Name `$ModuleName -Force -AllVersions -Confirm:`$false
+    Uninstall-Module -Name "`$ModuleName" -Force -AllVersions -Confirm:`$false
     Write-Host "Module `$ModuleName uninstalled
     Stop-Transcript
 "@
