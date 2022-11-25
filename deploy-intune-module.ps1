@@ -1025,23 +1025,19 @@ function new-detectionscript {
         $appid,
         $appname
     )
-    $detect = @'
-$installedVersion = (Get-InstalledModule -Name "SETAPPID")[0].Version
-$availableVersion = (Find-Module -Name "SETAPPID")[0].Version
+    $detect = @"
+`$installedVersion = (Get-InstalledModule -Name "$appid")[0].Version
+`$availableVersion = (Find-Module -Name "$appid")[0].Version
 
-if ($installedVersion -lt $availableVersion) {
+if (`$installedVersion -lt `$availableVersion) {
     Write-Host "Update available for: SETAPPNAME"
     exit 1
-}
-else {
+} else {
     Write-Host "No Upgrade available"
     exit 0
 }
-'@
-    $detect2 = $detect -replace "SETAPPID", $appid
-    $detect3 = $detect2 -replace "SETAPPNAME", $appname
-
-    return $detect3
+"@
+    return $detect
 }
 
 function new-remediationscript {
@@ -1061,7 +1057,7 @@ function new-remediationscript {
     `$ModuleName = "$appid"
     `$Path_local = "`$Env:Programfiles\_MEM"
     Start-Transcript -Path "`$Path_local\Log\`$ProgramName.log" -Force -Append
-    Update-Module -Name `$ModuleName -Force -AllVersions -Confirm:`$false
+    Update-Module -Name `$ModuleName -Force -Confirm:`$false
     Stop-Transcript
 "@
     return $remediate
@@ -1162,13 +1158,7 @@ function new-detectionscript {
         $appid,
         $appname
     )
-    $detection = @"
-    if ((Get-InstalledModule -Name "$appid").length -gt 0) {
-        Write-Host "Found it!"
-    } else {
-        Write-Error "Module Not Found"
-    }
-"@
+    $detection = "Get-InstalledModule -Name `"$appid`""
     return $detection
 
 }
@@ -1191,9 +1181,9 @@ function new-installscript {
     `$ModuleName = "$appid"
     `$Path_local = "`$Env:Programfiles\_MEM"
     Start-Transcript -Path "`$Path_local\Log\`$ModuleName-install.log" -Force -Append
-    Install-PackageProvider -Name NuGet -Confirm:`$false
+    Install-PackageProvider -Name NuGet -Confirm:`$false -Force
     Install-Module -Name "`$ModuleName" -force -AcceptLicense -AllowClobber -SkipPublisherCheck -Confirm:`$false
-
+    Write-Host "`$ModuleName installed"
     Stop-Transcript
 "@
     return $install
@@ -1219,7 +1209,7 @@ function new-uninstallscript {
     Start-Transcript -Path "`$Path_local\Log\`$ModuleName.log" -Force -Append
 
     Uninstall-Module -Name `$ModuleName -Force -AllVersions -Confirm:`$false
-    
+    Write-Host "Module `$ModuleName uninstalled
     Stop-Transcript
 "@
     return $uninstall
