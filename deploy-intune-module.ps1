@@ -1182,7 +1182,7 @@ function new-installscript {
     `$Path_local = "`$Env:Programfiles\_MEM"
     Start-Transcript -Path "`$Path_local\Log\`$ModuleName-install.log" -Force -Append
     Install-PackageProvider -Name NuGet -Confirm:`$false -Force
-    Install-Module -Name "`$ModuleName" -force -AcceptLicense -AllowClobber -SkipPublisherCheck -Confirm:`$false
+    Install-Module -Name "`$ModuleName" -force -AllowClobber -SkipPublisherCheck -Confirm:`$false
     Write-Host "`$ModuleName installed"
     Stop-Transcript
 "@
