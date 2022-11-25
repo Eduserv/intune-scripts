@@ -433,7 +433,7 @@ function Get-Win32AppBody() {
     if ($MSI) {
         
         $body = @{ "@odata.type" = "#microsoft.graph.win32LobApp" }
-        $body.applicableArchitectures = "x64,x86"
+        $body.applicableArchitectures = "x64"
         $body.description = $description
         $body.developer = ""
         $body.displayName = $displayName
