@@ -363,13 +363,6 @@ function Get-Win32AppBody() {
         
     param
     (
-        
-        [parameter(Mandatory = $true, ParameterSetName = "MSI", Position = 1)]
-        [Switch]$MSI,
-        
-        [parameter(Mandatory = $true, ParameterSetName = "EXE", Position = 1)]
-        [Switch]$EXE,
-        
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         [string]$displayName,
@@ -394,96 +387,32 @@ function Get-Win32AppBody() {
         [ValidateSet('system', 'user')]
         $installExperience,
         
-        [parameter(Mandatory = $true, ParameterSetName = "EXE")]
+        [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         $installCommandLine,
         
-        [parameter(Mandatory = $true, ParameterSetName = "EXE")]
+        [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        $uninstallCommandLine,
-        
-        [parameter(Mandatory = $true, ParameterSetName = "MSI")]
-        [ValidateNotNullOrEmpty()]
-        $MsiPackageType,
-        
-        [parameter(Mandatory = $true, ParameterSetName = "MSI")]
-        [ValidateNotNullOrEmpty()]
-        $MsiProductCode,
-        
-        [parameter(Mandatory = $false, ParameterSetName = "MSI")]
-        $MsiProductName,
-        
-        [parameter(Mandatory = $true, ParameterSetName = "MSI")]
-        [ValidateNotNullOrEmpty()]
-        $MsiProductVersion,
-        
-        [parameter(Mandatory = $false, ParameterSetName = "MSI")]
-        $MsiPublisher,
-        
-        [parameter(Mandatory = $true, ParameterSetName = "MSI")]
-        [ValidateNotNullOrEmpty()]
-        $MsiRequiresReboot,
-        
-        [parameter(Mandatory = $true, ParameterSetName = "MSI")]
-        [ValidateNotNullOrEmpty()]
-        $MsiUpgradeCode
-        
+        $uninstallCommandLine        
     )
-        
-    if ($MSI) {
-        
-        $body = @{ "@odata.type" = "#microsoft.graph.win32LobApp" }
-        $body.applicableArchitectures = "x64"
-        $body.description = $description
-        $body.developer = ""
-        $body.displayName = $displayName
-        $body.fileName = $filename
-        $body.installCommandLine = "msiexec /i `"$SetupFileName`""
-        $body.installExperience = @{"runAsAccount" = "$installExperience" }
-        $body.informationUrl = $null
-        $body.isFeatured = $false
-        $body.minimumSupportedOperatingSystem = @{"v10_1607" = $true }
-        $body.msiInformation = @{
-            "packageType"    = "$MsiPackageType"
-            "productCode"    = "$MsiProductCode"
-            "productName"    = "$MsiProductName"
-            "productVersion" = "$MsiProductVersion"
-            "publisher"      = "$MsiPublisher"
-            "requiresReboot" = "$MsiRequiresReboot"
-            "upgradeCode"    = "$MsiUpgradeCode"
-        }
-        $body.notes = ""
-        $body.owner = ""
-        $body.privacyInformationUrl = $null
-        $body.publisher = $publisher
-        $body.runAs32bit = $false
-        $body.setupFilePath = $SetupFileName
-        $body.uninstallCommandLine = "msiexec /x `"$MsiProductCode`""
-        
-    }
-        
-    elseif ($EXE) {
-        
-        $body = @{ "@odata.type" = "#microsoft.graph.win32LobApp" }
-        $body.description = $description
-        $body.developer = ""
-        $body.displayName = $displayName
-        $body.fileName = $filename
-        $body.installCommandLine = "$installCommandLine"
-        $body.installExperience = @{"runAsAccount" = "$installExperience" }
-        $body.informationUrl = $null
-        $body.isFeatured = $false
-        $body.minimumSupportedOperatingSystem = @{"v10_1607" = $true }
-        $body.msiInformation = $null
-        $body.notes = ""
-        $body.owner = ""
-        $body.privacyInformationUrl = $null
-        $body.publisher = $publisher
-        $body.runAs32bit = $false
-        $body.setupFilePath = $SetupFileName
-        $body.uninstallCommandLine = "$uninstallCommandLine"
-        
-    }
+    $body = @{ "@odata.type" = "#microsoft.graph.win32LobApp" }
+    $body.description = $description
+    $body.applicableArchitectures = "x64"
+    $body.developer = ""
+    $body.displayName = $displayName
+    $body.fileName = $filename
+    $body.installCommandLine = "$installCommandLine"
+    $body.installExperience = @{"runAsAccount" = "$installExperience" }
+    $body.informationUrl = $null
+    $body.isFeatured = $false
+    $body.minimumSupportedOperatingSystem = @{"v10_1607" = $true }
+    $body.notes = ""
+    $body.owner = ""
+    $body.privacyInformationUrl = $null
+    $body.publisher = $publisher
+    $body.runAs32bit = $false
+    $body.setupFilePath = $SetupFileName
+    $body.uninstallCommandLine = "$uninstallCommandLine"
         
     $body
 }
@@ -860,34 +789,24 @@ function Invoke-UploadWin32Lob() {
         
         $SetupFileName = $DetectionXML.ApplicationInfo.SetupFile
                
-        $mobileAppBody = Get-Win32AppBody -EXE -displayName "$DisplayName" -publisher "$publisher" `
+        $mobileAppBody = Get-Win32AppBody -displayName "$DisplayName" -publisher "$publisher" `
             -description $description -filename $FileName -SetupFileName "$SetupFileName" `
             -installExperience $installExperience -installCommandLine $installCmdLine `
             -uninstallCommandLine $uninstallcmdline
         
         if ($DetectionRules.'@odata.type' -contains "#microsoft.graph.win32LobAppPowerShellScriptDetection" -and @($DetectionRules).'@odata.type'.Count -gt 1) {
-        
             Write-Warning "A Detection Rule can either be 'Manually configure detection rules' or 'Use a custom detection script'"
             Write-Warning "It can't include both..."
             break
-        
-        }
-        
-        else {
-        
+        } else {
             $mobileAppBody | Add-Member -MemberType NoteProperty -Name 'detectionRules' -Value $detectionRules
-        
         }
         
         #ReturnCodes
         
         if ($returnCodes) {
-                
             $mobileAppBody | Add-Member -MemberType NoteProperty -Name 'returnCodes' -Value @($returnCodes)
-        
-        }
-        
-        else {
+        } else {
             Write-Warning "Intunewin file requires ReturnCodes to be specified"
             Write-Warning "If you want to use the default ReturnCode run 'Get-DefaultReturnCodes'"
             break
@@ -963,11 +882,8 @@ function Invoke-UploadWin32Lob() {
             Write-Progress -Activity "Sleeping for $($sleep-$i) seconds" -PercentComplete ($i / $sleep * 100) -SecondsRemaining ($sleep - $i)
             Start-Sleep -s 1
         }            
-    }
-            
-    catch {
-        Write-Error "Aborting with exception: $($_.Exception.ToString())"
-            
+    } catch {
+        Write-Error "Aborting with exception: $($_.Exception.ToString())"  
     }
 }
         
@@ -1026,15 +942,20 @@ function new-detectionscript {
         $appname
     )
     $detect = @"
-`$installedVersion = (Get-InstalledModule -Name "$appid")[0].Version
-`$availableVersion = (Find-Module -Name "$appid")[0].Version
-
-if (`$installedVersion -lt `$availableVersion) {
-    Write-Host "Update available for: SETAPPNAME"
-    exit 1
-} else {
-    Write-Host "No Upgrade available"
+`$installedModules = Get-InstalledModule
+`$module = `$installedModules | where-object Name -eq "$appid"
+if (`$module.Length -eq 0) {
     exit 0
+} else {
+    `$availableVersion = (Find-Module -Name "$appid")
+
+    if (`$module[0].Version -lt `$availableVersion[0].Version) {
+        Write-Host "Update available for: SETAPPNAME"
+        exit 1
+    } else {
+        Write-Host "No Upgrade available"
+        exit 0
+    }
 }
 "@
     return $detect
@@ -1057,7 +978,7 @@ function new-remediationscript {
     `$ModuleName = "$appid"
     `$Path_local = "`$Env:Programfiles\_MEM"
     Start-Transcript -Path "`$Path_local\Log\`$ProgramName.log" -Force -Append
-    Update-Module -Name `$ModuleName -Force -Confirm:`$false
+    Update-Module -Name `$ModuleName -Force -Confirm:`$false -Scope AllUsers
     Stop-Transcript
 "@
     return $remediate
@@ -1148,16 +1069,21 @@ function new-installscript {
     $install = @"
     Param
     (
-      [parameter(Mandatory=`$false)]
-      [String[]]
-      `$param
+        [parameter(Mandatory=`$false)]
+        [String[]]
+        `$param
     )
     
     `$ModuleName = "$appid"
     `$Path_local = "`$Env:Programfiles\_MEM"
     Start-Transcript -Path "`$Path_local\Log\`$ModuleName-install.log" -Force -Append
-    Install-PackageProvider -Name "NuGet" -Confirm:`$false -Force
-    Install-Module -Name "`$ModuleName" -force -AllowClobber -SkipPublisherCheck -Confirm:`$false
+    Write-Host "Updating PowerShellGet"
+    Install-Module -Name "PowerShellGet" -Scope AllUsers -AllowClobber -Confirm:`$false -Force -Verbose
+    Import-Module -Name "PowerShellGet" -Force -MinimumVersion 2.0.0
+    Write-Host "Installing NuGet Provider"
+    Install-PackageProvider -Name "NuGet" -Confirm:`$false -Force -Verbose
+    Write-Host "Installing Module `$ModuleName"
+    Install-Module -Name "`$ModuleName" -Force -AllowClobber -SkipPublisherCheck -Confirm:`$false -Scope AllUsers -Verbose
     Write-Host "Module `$ModuleName installed"
     Stop-Transcript
 "@
@@ -1181,9 +1107,9 @@ function new-uninstallscript {
     
     `$ModuleName = "$appid"
     `$Path_local = "`$Env:Programfiles\_MEM"
-    Start-Transcript -Path "`$Path_local\Log\`$ModuleName.log" -Force -Append
+    Start-Transcript -Path "`$Path_local\Log\`$ModuleName-uninstall.log" -Force -Append
 
-    Uninstall-Module -Name "`$ModuleName" -Force -AllVersions -Confirm:`$false
+    Uninstall-Module -Name "`$ModuleName" -Force -AllVersions -Confirm:`$false -Verbose
     Write-Host "Module `$ModuleName uninstalled
     Stop-Transcript
 "@
@@ -1216,8 +1142,7 @@ function new-win32app {
     # Win32 Application Upload
     $appupload = Invoke-UploadWin32Lob -SourceFile "$appfile" -DisplayName "$appname" -publisher $publisher `
         -description "$description PSModule Package" -detectionRules $DetectionRule -returnCodes $ReturnCodes `
-        -installCmdLine "$installcmd" `
-        -uninstallCmdLine "$uninstallcmd"
+        -installCmdLine "$installcmd" -uninstallCmdLine "$uninstallcmd"
 
     return $appupload
 
@@ -1292,8 +1217,9 @@ Find-Module "*$(Read-Host "Inital Search query")*" | out-gridview -PassThru -Tit
     }
     ##Create and upload Win32
     Write-Verbose "Uploading $appname to Intune"
-    $installcmd = "powershell.exe -ExecutionPolicy Bypass -File $installfilename"
-    $uninstallcmd = "powershell.exe -ExecutionPolicy Bypass -File $uninstallfilename"
+    $installcmd = "%SystemRoot%\sysnative\WindowsPowerShell\v1.0\powershell.exe -windowstyle hidden -executionpolicy bypass -command .\$installfilename"
+    $uninstallcmd = "%SystemRoot%\sysnative\WindowsPowerShell\v1.0\powershell.exe -windowstyle hidden -executionpolicy bypass -command .\$uninstallfilename"
+
     new-win32app -appid $appid -appname $appname -appfile $intunewinpath -installcmd $installcmd -uninstallcmd $uninstallcmd -detectionfile $detectionscriptfile -publisher $_.Author -description $_.Description
     Write-Host "$appname Created and uploaded"
 
