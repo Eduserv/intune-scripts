@@ -1019,34 +1019,6 @@ filter Assert-WhiteSpaceIsNull {
     ELSE { $_ }
 }
 
-function new-aadgroups {
-    [cmdletbinding()]
-        
-    param
-    (
-        $appid,
-        $appname,
-        $grouptype
-    )
-    switch ($grouptype) {
-        "install" {
-            $groupname = $appname + " Install Group"
-            $nickname = $appid + "install"
-            $groupdescription = "Group for installation and updating of $appname application"
-        }
-        "uninstall" {
-            $groupname = $appname + " Uninstall Group"
-            $nickname = $appid + "uninstall"
-            $groupdescription = "Group for uninstallation of $appname application"
-        }
-    }
-
-    $grp = New-MgGroup -DisplayName $groupname -Description $groupdescription -MailEnabled:$False -MailNickName $nickname -SecurityEnabled:$True
-
-    return $grp.id
-
-}
-
 function new-detectionscript {
     param
     (
@@ -1078,9 +1050,21 @@ function new-remediationscript {
         $appid,
         $appname
     )
-    $remediate = 'Update-Module -Name "SETAPPID" -Force -AcceptLicense -Confirm:$false'
-    $remediate2 = $remediate -replace "SETAPPID", $appid
-    return $remediate2
+    $remediate = @"
+    Param
+    (
+      [parameter(Mandatory=`$false)]
+      [String[]]
+      `$param
+    )
+    
+    `$ModuleName = "$appid"
+    `$Path_local = "`$Env:Programfiles\_MEM"
+    Start-Transcript -Path "`$Path_local\Log\`$ProgramName.log" -Force -Append
+    Update-Module -Name `$ModuleName -Force -AllVersions -Confirm:`$false
+    Stop-Transcript
+"@
+    return $remediate
 
 }
 
@@ -1179,11 +1163,10 @@ function new-detectionscript {
         $appname
     )
     $detection = @"
-    if (Get-InstalledModule -Name "$appid").length -gt 0 {
+    if ((Get-InstalledModule -Name "$appid").length -gt 0) {
         Write-Host "Found it!"
-        exit 0
     } else {
-        exit -1
+        Write-Error "Module Not Found"
     }
 "@
     return $detection
@@ -1198,7 +1181,20 @@ function new-installscript {
         $appname
     )
     $install = @"
-    Install-Module -Name "$appid" -force -AcceptLicense -AllowClobber -SkipPublisherCheck -Confirm:`$false
+    Param
+    (
+      [parameter(Mandatory=`$false)]
+      [String[]]
+      `$param
+    )
+    
+    `$ModuleName = "$appid"
+    `$Path_local = "`$Env:Programfiles\_MEM"
+    Start-Transcript -Path "`$Path_local\Log\`$ModuleName-install.log" -Force -Append
+    Install-PackageProvider -Name NuGet -Confirm:`$false
+    Install-Module -Name "`$ModuleName" -force -AcceptLicense -AllowClobber -SkipPublisherCheck -Confirm:`$false
+
+    Stop-Transcript
 "@
     return $install
 
@@ -1211,56 +1207,22 @@ function new-uninstallscript {
         $appname
     )
     $uninstall = @"
-    Uninstall-Module -Name "$appid" -Force -AllVersions -Confirm:`$false
+    Param
+    (
+      [parameter(Mandatory=`$false)]
+      [String[]]
+      `$param
+    )
+    
+    `$ModuleName = "$appid"
+    `$Path_local = "`$Env:Programfiles\_MEM"
+    Start-Transcript -Path "`$Path_local\Log\`$ModuleName.log" -Force -Append
+
+    Uninstall-Module -Name `$ModuleName -Force -AllVersions -Confirm:`$false
+    
+    Stop-Transcript
 "@
     return $uninstall
-
-}
-
-function grant-win32app {
-    param
-    (
-        $appname,
-        $installgroup,
-        $uninstallgroup
-    )
-    $Application = Get-IntuneApplication | where-object { $_.displayName -eq "$appname" -and $_.description -like "*PSModule*" }
-    #Install
-    $ApplicationId = $Application.id
-    $TargetGroupId1 = $installgroup
-    $InstallIntent1 = "required"
-    
-    
-    #Uninstall
-    $ApplicationId = $Application.id
-    $TargetGroupId = $uninstallgroup
-    $InstallIntent = "uninstall"
-    $JSON = @"
-    
-    {
-        "mobileAppAssignments": [
-          {
-            "@odata.type": "#microsoft.graph.mobileAppAssignment",
-            "target": {
-            "@odata.type": "#microsoft.graph.groupAssignmentTarget",
-            "groupId": "$TargetGroupId1"
-            },
-            "intent": "$InstallIntent1"
-        },
-        {
-            "@odata.type": "#microsoft.graph.mobileAppAssignment",
-            "target": {
-            "@odata.type": "#microsoft.graph.groupAssignmentTarget",
-            "groupId": "$TargetGroupId"
-            },
-            "intent": "$InstallIntent"
-        }
-        ]
-    }
-    
-"@
-    Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceAppManagement/mobileApps/$ApplicationId/assign" -Method POST -Body $JSON
-    
 }
 
 function new-win32app {
@@ -1304,7 +1266,7 @@ $question = $host.UI.PromptForChoice("Verbose output?", "Do you want verbose out
 
 Write-Verbose "Connecting to Microsoft Graph"
 Select-MgProfile -Name Beta
-Connect-MgGraph -Scopes DeviceManagementApps.ReadWrite.All, DeviceManagementConfiguration.ReadWrite.All, Group.ReadWrite.All, GroupMember.ReadWrite.All, openid, profile, email, offline_access
+Connect-MgGraph -Scopes DeviceManagementApps.ReadWrite.All, DeviceManagementConfiguration.ReadWrite.All, openid, profile, email, offline_access
 Write-Verbose "Graph connection established"
 
 if ($question -eq 0) {
@@ -1318,19 +1280,11 @@ Find-Module "*$(Read-Host "Inital Search query")*" | out-gridview -PassThru -Tit
 
     Write-Verbose "Module $appid selected"
 
-
     ##Create Directory
     Write-Verbose "Creating Directory for $appname"
     $apppath = "$path\$appid"
     new-item -Path $apppath -ItemType Directory -Force
     Write-Host "Directory $apppath Created"
-
-    ##Create Groups
-    Write-Verbose "Creating AAD Groups for $appname"
-    $installgroup = new-aadgroups -appid $appid -appname $appname -grouptype "Install"
-    $uninstallgroup = new-aadgroups -appid $appid -appname $appname -grouptype "Uninstall"
-    Write-Host "Created $installgroup for installing $appname"
-    Write-Host "Created $uninstallgroup for uninstalling $appname"
 
     ##Create Install Script
     Write-Verbose "Creating Install Script for $appname"
@@ -1377,12 +1331,6 @@ Find-Module "*$(Read-Host "Inital Search query")*" | out-gridview -PassThru -Tit
     $uninstallcmd = "powershell.exe -ExecutionPolicy Bypass -File $uninstallfilename"
     new-win32app -appid $appid -appname $appname -appfile $intunewinpath -installcmd $installcmd -uninstallcmd $uninstallcmd -detectionfile $detectionscriptfile -publisher $_.Author -description $_.Description
     Write-Host "$appname Created and uploaded"
-
-    ##Assign Win32
-    Write-Verbose "Assigning Groups"
-    grant-win32app -appname $appname -installgroup $installgroup -uninstallgroup $uninstallgroup
-    Write-Host "Assigned $installgroup as Required Install to $appname"
-    Write-Host "Assigned $uninstallgroup as Required Uninstall to $appname"
 
     ##Done
     Write-Host "$appname packaged and deployed"
