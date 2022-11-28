@@ -180,7 +180,6 @@ if (($IsPasswordSet -eq 1) -or ($IsPasswordSet -eq "true") -or ($IsPasswordSet -
 
 Write-Log "Generated Random Password"
 $password = Get-RandomPassword
-Write-Host $password
 $secretvalue = ConvertTo-SecureString $password -AsPlainText -Force
 
 if ($Get_Manufacturer_Info -like "*HP*") {
