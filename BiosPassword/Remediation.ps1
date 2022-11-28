@@ -42,20 +42,23 @@ function Write-Log {
     Write-Host  "$MyDate - $MessageType : $Message"
 }
 
-function Get-Random {
-    $ascii=$NULL;
-    For ($a=33;$a –le 126;$a++) {
-        $ascii+=,[char][byte]$a 
-    }
+function Get-RandomPassword {
+    $uppercase = "ABCDEFGHKLMNOPRSTUVWXYZ".tochararray() 
+    $lowercase = "abcdefghiklmnoprstuvwxyz".tochararray() 
+    $number = "0123456789".tochararray() 
+    $special = "$%&/()=?}{@#*+!".tochararray() 
+    $scrambledpassword = "";
     
-    $length = 9
+    $password =($uppercase | Get-Random -count 5) -join ''
+    $password +=($lowercase | Get-Random -count 5) -join ''
+    $password +=($number | Get-Random -count 1) -join ''
+    $password +=($special | Get-Random -count 1) -join ''
     
-    For ($loop=1; $loop –le $length; $loop++) {
-        $TempPassword+=($sourcedata | Get-Random)
-    }
-    
-    return $TempPassword
+    $passwordarray=$password.tochararray() 
+    $scrambledpassword=($passwordarray | Get-Random -Count 12) -join ''
+    return $scrambledpassword
 }
+
 $Path_local = "$Env:Programfiles\_MEM"
 Start-Transcript -Path "$Path_local\Log\BiosRemediation.log" -Force -Append
 
@@ -84,14 +87,16 @@ if (!(Get-PackageProvider | Where-Object Name -eq "Nuget")) {
 }
 
 $Modules = @("Az.accounts", "Az.KeyVault")
+$InstalledModules = Get-InstalledModule
 foreach ($Module_Name in $Modules) {
-    if (!(Get-InstalledModule $Module_Name)) { 
+    if (($InstalledModules | Where-Object Name -eq $Module_Name).Length -eq 0) { 
         Write-Log -MessageType "INFO" -Message "The module $Module_Name has not been found"
         try {
             Write-Log -MessageType "INFO" -Message "The module $Module_Name is being installed"
-            Install-Module $Module_Name -Force -Confirm:$False -AllowClobber -ErrorAction SilentlyContinue | out-null
+            Install-Module $Module_Name -Force -Confirm:$False -AllowClobber -ErrorAction SilentlyContinue -Scope AllUsers | out-null
             Write-Log -MessageType "SUCCESS" -Message "The module $Module_Name has been installed"
             Write-Log -MessageType "INFO" -Message "AZ.Accounts version $Module_Version"
+            Import-Module $Module_Name -Force -ErrorAction SilentlyContinue
         } catch {
             Write-Log -MessageType "ERROR" -Message "The module $Module_Name has not been installed"
             Stop-Transcript
@@ -117,7 +122,7 @@ if ((Get-Module "Az.accounts" -listavailable) -and (Get-Module "Az.KeyVault" -li
 
 try {
     Write-Log -MessageType "INFO" -Message "Connecting to your Azure application"
-    Connect-AzAccount -tenantid $TenantID.ToString() -ApplicationId $AppID.ToString() -CertificateThumbprint $Thumbprint | Out-null
+    Connect-AzAccount -tenantid $TenantID.ToString() -ApplicationId $AppID.ToString() -CertificateThumbprint $Thumbprint
     Write-Log -MessageType "SUCCESS" -Message "Connection OK to your Azure application"
 } catch {
     Write-Log -MessageType "ERROR" -Message "Connection to to your Azure application"
@@ -126,8 +131,8 @@ try {
     EXIT 1
 }
 
-$Get_Manufacturer_Info = (gwmi win32_computersystem).Manufacturer
-$Get_Device_Name = (gwmi win32_computersystem).Name
+$Get_Manufacturer_Info = (Get-WmiObject win32_computersystem).Manufacturer
+$Get_Device_Name = (Get-WmiObject win32_computersystem).Name
 Write-Log -MessageType "INFO" -Message "Manufacturer is: $Get_Manufacturer_Info"
 
 if (($Get_Manufacturer_Info -notlike "*HP*") -and ($Get_Manufacturer_Info -notlike "*Lenovo*") -and ($Get_Manufacturer_Info -notlike "*Dell*")) {
@@ -138,26 +143,44 @@ if (($Get_Manufacturer_Info -notlike "*HP*") -and ($Get_Manufacturer_Info -notli
     EXIT 1
 }
 
+Write-Log -MessageType "INFO" -Message "Checking if password is set"
 if ($Get_Manufacturer_Info -like "*Lenovo*") {
-    $IsPasswordSet = (gwmi -Class Lenovo_BiosPasswordSettings -Namespace root\wmi).PasswordState
+    $IsPasswordSet = (Get-WmiObject -Class Lenovo_BiosPasswordSettings -Namespace root\wmi).PasswordState
 }
 elseif ($Get_Manufacturer_Info -like "*HP*") {
     $IsPasswordSet = (Get-WmiObject -Namespace root/hp/instrumentedBIOS -Class HP_BIOSSetting | Where-Object Name -eq "Setup password").IsSet
 } 
 elseif ($Get_Manufacturer_Info -like "*Dell*") {
     $module_name = "DellBIOSProvider"
-    if (Get-InstalledModule -Name DellBIOSProvider) { import-module DellBIOSProvider -Force }
-    else { Install-Module -Name DellBIOSProvider -Force }
-    $IsPasswordSet = (Get-Item -Path DellSmbios:\Security\IsAdminPasswordSet).currentvalue
+    if (($InstalledModules | Where-Object Name -eq $module_name).Length -gt 0) {
+        Update-Module $Module_Name -Force -Confirm:$false -Scope AllUsers
+        Import-Module $module_name -Force
+        Write-Log -MessageType "INFO" -Message "Module $module_name imported"	
+    } else {
+        Write-Log -MessageType "INFO" -Message "Module $module_name not installed"
+        try {
+            Install-Module -Name $module_name -Force -Confirm:$false -Scope AllUsers
+            Import-Module -Name $module_name -Force
+            Write-Log -MessageType "INFO" -Message "Module $module_name has been installed"
+        } catch {
+            Write-Log -MessageType "ERROR" -Message "Error importing module $module_name"
+            Write-Error $Error
+            Stop-Transcript
+            Exit 1
+        }
+    }	
+    $IsPasswordSet = (Get-Item -Path DellSmbios:\Security\IsAdminPasswordSet).currentvalue 	
 } 
 
 if (($IsPasswordSet -eq 1) -or ($IsPasswordSet -eq "true") -or ($IsPasswordSet -eq 2)) {
-    Write-Error -MessageType "ERROR" -Message "There is a current BIOS password"
+    Write-Error "There is a current BIOS password"
     Stop-Transcript
     Exit 1
 }
 
-$password = Get-Random
+Write-Log "Generated Random Password"
+$password = Get-RandomPassword
+Write-Host $password
 $secretvalue = ConvertTo-SecureString $password -AsPlainText -Force
 
 if ($Get_Manufacturer_Info -like "*HP*") {
@@ -193,9 +216,9 @@ if ($Get_Manufacturer_Info -like "*HP*") {
         EXIT 1
     }
 } elseif ($Get_Manufacturer_Info -like "*Dell*") {
-    Write-Log -MessageType "INFO" -Message "Changing BIOS password for HP"
+    Write-Log -MessageType "INFO" -Message "Changing BIOS password for Dell"
     try {
-        Set-Item -Path DellSmbios:\Security\AdminPassword "$AdminPwd"
+        Set-Item -Path DellSmbios:\Security\AdminPassword "$password"
         Write-Log -MessageType "SUCCESS" -Message "BIOS password has been changed"		
         Write-Host "Change password: Success"			
         Set-AzKeyVaultSecret -VaultName $VaultName -Name $Get_Device_Name -SecretValue $secretvalue
