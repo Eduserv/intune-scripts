@@ -56,8 +56,8 @@ function Get-Random {
     
     return $TempPassword
 }
-
-Start-Transcript -Path "$env:SystemDrive\Windows\Debug\Set_BIOS_password_remediation.log"
+$Path_local = "$Env:Programfiles\_MEM"
+Start-Transcript -Path "$Path_local\Log\BiosRemediation.log" -Force -Append
 
 Write-Log -MessageType "INFO" -Message "Checking to see if the cert is installed"
 try {
@@ -69,7 +69,7 @@ try {
     EXIT 1
 }
 
-if (!(Get-PackageProvider | where {$_.Name -eq "Nuget"})) {			
+if (!(Get-PackageProvider | Where-Object Name -eq "Nuget")) {			
     Write-Log -MessageType "INFO" -Message "The package Nuget is not installed"							
     try {
         Write-Log -MessageType "INFO" -Message "The package Nuget is being installed"						

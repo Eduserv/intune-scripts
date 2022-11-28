@@ -10,7 +10,8 @@
   0 BIOS Password Set
   1 BIOS Password Not Set
 #>
-Start-Transcript -Path "$env:SystemDrive\Windows\Debug\Set_BIOS_password.log"
+$Path_local = "$Env:Programfiles\_MEM"
+Start-Transcript -Path "$Path_local\Log\BiosDetection.log" -Force -Append
 function Write-Log {
     param(
         $MessageType,
@@ -21,7 +22,7 @@ function Write-Log {
     Write-Host  "$MyDate - $MessageType : $Message"
 }
 
-if (!(Get-PackageProvider | where {$_.Name -eq "Nuget"})) {			
+if (!(Get-PackageProvider | Where-Object Name -eq "Nuget")) {			
     Write-Log -MessageType "INFO" -Message "The package Nuget is not installed"							
     try {
         Write-Log -MessageType "INFO" -Message "The package Nuget is being installed"						
