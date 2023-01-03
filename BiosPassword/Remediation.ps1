@@ -152,11 +152,7 @@ elseif ($Get_Manufacturer_Info -like "*HP*") {
 } 
 elseif ($Get_Manufacturer_Info -like "*Dell*") {
     $module_name = "DellBIOSProvider"
-    if (($InstalledModules | Where-Object Name -eq $module_name).Length -gt 0) {
-        Update-Module $Module_Name -Force -Confirm:$false -Scope AllUsers
-        Import-Module $module_name -Force
-        Write-Log -MessageType "INFO" -Message "Module $module_name imported"	
-    } else {
+    if (($InstalledModules | Where-Object Name -eq $module_name).Length -eq 0) {
         Write-Log -MessageType "INFO" -Message "Module $module_name not installed"
         try {
             Install-Module -Name $module_name -Force -Confirm:$false -Scope AllUsers
@@ -168,7 +164,12 @@ elseif ($Get_Manufacturer_Info -like "*Dell*") {
             Stop-Transcript
             Exit 1
         }
-    }	
+    } else {
+        Update-Module $Module_Name -Force -Confirm:$false -Scope AllUsers
+        Import-Module $module_name -Force
+        Write-Log -MessageType "INFO" -Message "Module $module_name imported"	
+    }
+    
     $IsPasswordSet = (Get-Item -Path DellSmbios:\Security\IsAdminPasswordSet).currentvalue 	
 } 
 
