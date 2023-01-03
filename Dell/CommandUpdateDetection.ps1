@@ -26,9 +26,9 @@ Write-Log -MessageType "INFO" -Message "Detected $Get_Manufacturer_Info"
 if ($Get_Manufacturer_Info -like "*Dell*") {
     $DCU = "$Env:Programfiles\Dell\CommandUpdate\dcu-cli.exe"
     $foundDCU = $true
-    if (!Test-Path $DCU) {
+    if (!(Test-Path $DCU)) {
         $DCU = "${Env:ProgramFiles(x86)}\Dell\CommandUpdate\dcu-cli.exe"
-        if (!Test-Path $DCU) {
+        if (!(Test-Path $DCU)) {
             Write-Log -MessageType "ERROR" -Message "Dell Command | Update is not installed, cancelling"
             Stop-Transcript
             $foundDCU = $false

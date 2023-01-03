@@ -46,9 +46,9 @@ Start-Transcript -Path "$Path_local\Log\DellCommandUpdateRemediation.log" -Force
 
 $DCU = "$Env:Programfiles\Dell\CommandUpdate\dcu-cli.exe"
 $foundDCU = $true
-if (!Test-Path $DCU) {
+if (!(Test-Path $DCU)) {
     $DCU = "${Env:ProgramFiles(x86)}\Dell\CommandUpdate\dcu-cli.exe"
-    if (!Test-Path $DCU) {
+    if (!(Test-Path $DCU)) {
         Write-Log -MessageType "ERROR" -Message "Dell Command | Update is not installed, cancelling"
         Write-Error "Command Update Missing"
         Stop-Transcript
