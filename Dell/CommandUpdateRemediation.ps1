@@ -41,25 +41,6 @@ function Write-Log {
     Write-Host  "$MyDate - $MessageType : $Message"
 }
 
-function Check-DellReturn {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true,Position=0,ValueFromPipeline=$true)]
-        $return
-    )
-    if ($return.length -gt 0) {
-        if ($return[$return.length - 1] -ilike "*code: 0") {
-            Write-Log -MessageType "INFO" -Message $return[$return.length - 3]
-            Write-Log -MessageType "INFO" -Message $return[$return.length - 2]
-            return $true
-        } else {
-            return $false
-        }
-    } else {
-        return $false
-    }
-}
-
 $Path_local = "$Env:Programfiles\_MEM"
 Start-Transcript -Path "$Path_local\Log\DellCommandUpdateRemediation.log" -Force -Append
 
@@ -202,8 +183,21 @@ if ($foundDCU) {
         }
         Write-Log -MessageType "INFO" -Message "Setting Dell Command | Update to use BIOS Password"
         $return = & $DCU /configure -biosPassword "$key"
-        if (!(Check-DellReturn -return $return)) {
-            
+        if ($return.length -gt 0) {
+            if ($return[$return.length - 1] -ilike "*code: 0") {
+                Write-Log -MessageType "INFO" -Message $return[$return.length - 3]
+                Write-Log -MessageType "INFO" -Message $return[$return.length - 2]
+            } else {
+                Write-Log -MessageType "ERROR" -Message "Setting Dell Command | Update to use BIOS Password"
+                Write-Error "FAILED Setting Dell Command | Update to use BIOS Password"
+                Stop-Transcript
+                EXIT 1
+            }
+        } else {
+            Write-Log -MessageType "ERROR" -Message "Setting Dell Command | Update to use BIOS Password"
+            Write-Error "FAILED Setting Dell Command | Update to use BIOS Password"
+            Stop-Transcript
+            EXIT 1
         }
 
     } else {
