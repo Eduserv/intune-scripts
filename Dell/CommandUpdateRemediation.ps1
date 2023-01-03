@@ -44,6 +44,18 @@ function Write-Log {
 $Path_local = "$Env:Programfiles\_MEM"
 Start-Transcript -Path "$Path_local\Log\DellCommandUpdateRemediation.log" -Force -Append
 
+$Get_Manufacturer_Info = (Get-WmiObject win32_computersystem).Manufacturer
+$Get_Device_Name = (Get-WmiObject win32_computersystem).Name
+Write-Log -MessageType "INFO" -Message "Manufacturer is: $Get_Manufacturer_Info"
+
+if (($Get_Manufacturer_Info -notlike "*Dell*")) {
+    Write-Log -MessageType "ERROR" -Message "Device manufacturer not supported"
+    Break
+    Write-Error "Device manufacturer not supported"
+    Stop-Transcript
+    EXIT 1
+}
+
 $DCU = "$Env:Programfiles\Dell\CommandUpdate\dcu-cli.exe"
 $foundDCU = $true
 if (!(Test-Path $DCU)) {
@@ -57,20 +69,7 @@ if (!(Test-Path $DCU)) {
     }
 }
 
-if ($foundDCU) {
-    $Get_Manufacturer_Info = (Get-WmiObject win32_computersystem).Manufacturer
-    $Get_Device_Name = (Get-WmiObject win32_computersystem).Name
-    Write-Log -MessageType "INFO" -Message "Manufacturer is: $Get_Manufacturer_Info"
-
-    if (($Get_Manufacturer_Info -notlike "*Dell*")) {
-        Write-Log -MessageType "ERROR" -Message "Device manufacturer not supported"
-        Break
-        Write-Error "Device manufacturer not supported"
-        Stop-Transcript
-        EXIT 1
-    }
-
-    
+if ($foundDCU) {   
     Write-Log -MessageType "INFO" -Message "Checking to see if the cert is installed"
     try {
         Get-ChildItem -Path "cert://localmachine/my/$Thumbprint"
